@@ -64,6 +64,9 @@ class TransactionSyncer(
     private val _syncStateFlow: MutableStateFlow<SyncState> = MutableStateFlow(SyncState.NotSynced(SyncError.NotStarted()))
     val syncStateFlow: StateFlow<SyncState> = _syncStateFlow
 
+    val syncState: SyncState
+        get() = _syncStateFlow.value
+
     private val _transactionsFlow = MutableSharedFlow<List<Transaction>>(replay = 0, extraBufferCapacity = 10)
     val transactionsFlow: SharedFlow<List<Transaction>> = _transactionsFlow
 

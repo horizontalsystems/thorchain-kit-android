@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.TxBuilderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:54:02.477Z" hostname="Rafaels-MacBook-Pro.local" time="0.019">
+<testsuite name="io.horizontalsystems.thorchainkit.TxBuilderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-19T10:05:18.976Z" hostname="Rafaels-MacBook-Pro.local" time="0.021">
   <properties/>
   <testcase name="assetNotation" classname="io.horizontalsystems.thorchainkit.TxBuilderTest" time="0.002"/>
-  <testcase name="buildSigned_msgSend" classname="io.horizontalsystems.thorchainkit.TxBuilderTest" time="0.015"/>
-  <testcase name="buildSigned_msgDeposit" classname="io.horizontalsystems.thorchainkit.TxBuilderTest" time="0.002"/>
+  <testcase name="buildSigned_msgSend" classname="io.horizontalsystems.thorchainkit.TxBuilderTest" time="0.016"/>
+  <testcase name="buildSigned_msgDeposit" classname="io.horizontalsystems.thorchainkit.TxBuilderTest" time="0.003"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

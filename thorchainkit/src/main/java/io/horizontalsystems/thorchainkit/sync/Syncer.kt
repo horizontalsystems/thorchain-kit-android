@@ -57,6 +57,14 @@ class Syncer(
         syncTimer.stop()
     }
 
+    fun pause() {
+        syncTimer.pause()
+    }
+
+    fun resume() {
+        syncTimer.resume()
+    }
+
     fun refresh() {
         when (syncTimer.state) {
             SyncTimer.State.Ready -> sync()
