@@ -14,13 +14,15 @@ enum class Network(
         coinType = 931,
         addressPrefix = "thor",
         thornodeUrls = listOf(
-            URL("https://thornode.ninerealms.com/"),
-            URL("https://thornode-v2.ninerealms.com/")
+            URL("https://gateway.liquify.com/chain/thorchain_api/"),
+            URL("https://thornode.thorchain.liquify.com/")
         ),
         midgardUrls = listOf(
-            URL("https://midgard.ninerealms.com/")
+            URL("https://gateway.liquify.com/chain/thorchain_midgard/")
         )
     ),
+    // Public stagenet endpoints are in transition (Nine Realms endpoints are gone,
+    // new URLs not yet published) — override base URLs via ThorchainKit until then
     Stagenet(
         id = 2,
         coinType = 931,

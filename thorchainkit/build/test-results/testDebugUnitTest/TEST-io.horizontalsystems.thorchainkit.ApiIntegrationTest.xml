@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.horizontalsystems.thorchainkit.ApiIntegrationTest" tests="7" skipped="7" failures="0" errors="0" timestamp="2026-07-19T09:41:07.267Z" hostname="Rafaels-MacBook-Pro.local" time="0.0">
+  <properties/>
+  <testcase name="fetchChainId" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchLastBlockHeight" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchBalances" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchNativeTxFee" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchAccount" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchActions" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="fetchTransaction_notFound" classname="io.horizontalsystems.thorchainkit.ApiIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
