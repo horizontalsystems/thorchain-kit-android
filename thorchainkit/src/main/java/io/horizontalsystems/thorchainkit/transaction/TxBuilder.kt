@@ -76,6 +76,8 @@ object TxBuilder {
         sequence: Long,
         chainId: String,
         gasLimit: Long,
+        feeAmount: BigInteger? = null,
+        feeDenom: String = "rune",
         signer: Signer
     ): ByteArray {
         val bodyBytes = TxOuterClass.TxBody.newBuilder()
@@ -109,6 +111,15 @@ object TxBuilder {
             .setFee(
                 TxOuterClass.Fee.newBuilder()
                     .setGasLimit(gasLimit)
+                    .apply {
+                        feeAmount?.let {
+                            addAmount(
+                                CoinOuterClass.Coin.newBuilder()
+                                    .setDenom(feeDenom)
+                                    .setAmount(it.toString())
+                            )
+                        }
+                    }
             )
             .build()
             .toByteString()

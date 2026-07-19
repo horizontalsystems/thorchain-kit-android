@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.TransactionSyncerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-07-19T11:24:48.929Z" hostname="Rafaels-MacBook-Pro.local" time="0.009">
-  <properties/>
-  <testcase name="fromMidgardAction_noTxId" classname="io.horizontalsystems.thorchainkit.TransactionSyncerTest" time="0.008"/>
-  <testcase name="fromMidgardAction_send" classname="io.horizontalsystems.thorchainkit.TransactionSyncerTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

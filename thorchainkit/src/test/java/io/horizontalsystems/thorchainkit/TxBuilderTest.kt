@@ -25,7 +25,7 @@ class TxBuilderTest {
     @Test
     fun buildSigned_msgSend() {
         val message = TxBuilder.msgSend(from, to, BigInteger.valueOf(1_000_000), "rune")
-        val txRaw = TxBuilder.buildSigned(listOf(message), "test", accountNumber, sequence, chainId, gasLimit, signer)
+        val txRaw = TxBuilder.buildSigned(listOf(message), "test", accountNumber, sequence, chainId, gasLimit, signer = signer)
 
         assertEquals(
             "0a570a4f0a0e2f74797065732e4d736753656e64123d0a1446def63a09c06a7ccf75e30b9a36fb8fa4b6bc99" +
@@ -42,7 +42,7 @@ class TxBuilderTest {
     fun buildSigned_msgDeposit() {
         val memo = "=:ETH.ETH:0x1c7b17362df9a7cc4f4a733792d81ee5b3b40331"
         val message = TxBuilder.msgDeposit(Asset.Rune, BigInteger.valueOf(1_000_000), memo, from)
-        val txRaw = TxBuilder.buildSigned(listOf(message), "", accountNumber, sequence, chainId, gasLimit, signer)
+        val txRaw = TxBuilder.buildSigned(listOf(message), "", accountNumber, sequence, chainId, gasLimit, signer = signer)
 
         assertEquals(
             "0a83010a80010a112f74797065732e4d73674465706f736974126b0a1d0a120a0454484f52120452554e451a" +
