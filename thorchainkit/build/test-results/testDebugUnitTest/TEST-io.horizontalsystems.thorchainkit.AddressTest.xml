@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.AddressTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-07-19T10:05:17.847Z" hostname="Rafaels-MacBook-Pro.local" time="0.086">
+<testsuite name="io.horizontalsystems.thorchainkit.AddressTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-07-19T11:24:47.880Z" hostname="Rafaels-MacBook-Pro.local" time="0.086">
   <properties/>
   <testcase name="fromString" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.012"/>
   <testcase name="fromString_notBech32" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.002"/>
   <testcase name="fromPublicKey" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.069"/>
-  <testcase name="fromString_wrongNetwork" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.002"/>
+  <testcase name="fromString_wrongNetwork" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.003"/>
   <testcase name="fromString_invalidChecksum" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.0"/>
-  <testcase name="equality" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.001"/>
+  <testcase name="equality" classname="io.horizontalsystems.thorchainkit.AddressTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

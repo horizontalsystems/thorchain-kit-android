@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.horizontalsystems.thorchainkit.DenomTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-07-19T11:24:47.974Z" hostname="Rafaels-MacBook-Pro.local" time="0.004">
+  <properties/>
+  <testcase name="assetFor_secured" classname="io.horizontalsystems.thorchainkit.DenomTest" time="0.002"/>
+  <testcase name="denomFor_futureThorNative" classname="io.horizontalsystems.thorchainkit.DenomTest" time="0.0"/>
+  <testcase name="denomFor_inverse" classname="io.horizontalsystems.thorchainkit.DenomTest" time="0.001"/>
+  <testcase name="assetFor_thorNatives" classname="io.horizontalsystems.thorchainkit.DenomTest" time="0.001"/>
+  <testcase name="assetFor_synth" classname="io.horizontalsystems.thorchainkit.DenomTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

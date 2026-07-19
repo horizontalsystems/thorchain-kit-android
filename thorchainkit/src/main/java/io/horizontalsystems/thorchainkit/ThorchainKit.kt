@@ -6,6 +6,7 @@ import io.horizontalsystems.thorchainkit.database.Storage
 import io.horizontalsystems.thorchainkit.database.ThorchainDatabaseManager
 import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.models.Asset
+import io.horizontalsystems.thorchainkit.models.Denom
 import io.horizontalsystems.thorchainkit.models.Transaction
 import io.horizontalsystems.thorchainkit.network.ConnectionManager
 import io.horizontalsystems.thorchainkit.network.MidgardProvider
@@ -131,7 +132,7 @@ class ThorchainKit private constructor(
     suspend fun send(
         to: Address,
         amount: BigInteger,
-        denom: String = BalanceManager.RUNE_DENOM,
+        denom: String = Denom.RUNE,
         memo: String? = null,
         signer: Signer
     ): String {
