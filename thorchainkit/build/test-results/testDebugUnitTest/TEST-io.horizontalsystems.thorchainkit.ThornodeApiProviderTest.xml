@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:41:07.969Z" hostname="Rafaels-MacBook-Pro.local" time="0.007">
+<testsuite name="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:54:02.460Z" hostname="Rafaels-MacBook-Pro.local" time="0.006">
   <properties/>
-  <testcase name="parseAccountInfo_unsupportedType" classname="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" time="0.007"/>
+  <testcase name="parseAccountInfo_unsupportedType" classname="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" time="0.006"/>
   <testcase name="parseAccountInfo_moduleAccount" classname="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" time="0.0"/>
   <testcase name="parseAccountInfo_baseAccount" classname="io.horizontalsystems.thorchainkit.ThornodeApiProviderTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

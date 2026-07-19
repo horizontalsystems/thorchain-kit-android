@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.SignerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:41:07.273Z" hostname="Rafaels-MacBook-Pro.local" time="0.695">
+<testsuite name="io.horizontalsystems.thorchainkit.SignerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:54:01.464Z" hostname="Rafaels-MacBook-Pro.local" time="0.995">
   <properties/>
-  <testcase name="publicKeyAndAddress" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.086"/>
-  <testcase name="sign" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.553"/>
-  <testcase name="seedFromMnemonic" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.022"/>
-  <testcase name="sign_deterministic" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.019"/>
-  <testcase name="privateKeyDerivation" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.015"/>
+  <testcase name="publicKeyAndAddress" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.128"/>
+  <testcase name="sign" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.801"/>
+  <testcase name="seedFromMnemonic" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.028"/>
+  <testcase name="sign_deterministic" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.021"/>
+  <testcase name="privateKeyDerivation" classname="io.horizontalsystems.thorchainkit.SignerTest" time="0.016"/>
   <system-out><![CDATA[Could not load Android Secp256k1. Trying to extract JVM platform specific version.
 ]]></system-out>
   <system-err><![CDATA[]]></system-err>

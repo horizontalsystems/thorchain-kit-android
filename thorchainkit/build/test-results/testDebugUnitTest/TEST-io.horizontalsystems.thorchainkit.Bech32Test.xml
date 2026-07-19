@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.horizontalsystems.thorchainkit.Bech32Test" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:41:07.268Z" hostname="Rafaels-MacBook-Pro.local" time="0.004">
+<testsuite name="io.horizontalsystems.thorchainkit.Bech32Test" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-07-19T09:54:01.459Z" hostname="Rafaels-MacBook-Pro.local" time="0.004">
   <properties/>
   <testcase name="decode_invalidChecksum" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.0"/>
-  <testcase name="decode_uppercase" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.003"/>
-  <testcase name="decode_mixedCase" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.0"/>
+  <testcase name="decode_uppercase" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.002"/>
+  <testcase name="decode_mixedCase" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.001"/>
   <testcase name="roundTrip" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.0"/>
   <testcase name="encode_knownAddress" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.0"/>
   <testcase name="decode_invalidCharacter" classname="io.horizontalsystems.thorchainkit.Bech32Test" time="0.0"/>
