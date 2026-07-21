@@ -5,6 +5,9 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 
+// Registers on start() and unregisters on stop(), and can be restarted: a
+// stop()/start() cycle gets a fresh callback registration, so connectivity
+// changes keep being observed across kit restarts.
 class ConnectionManager(context: Context) {
 
     interface Listener {
@@ -14,17 +17,47 @@ class ConnectionManager(context: Context) {
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     var listener: Listener? = null
-    var isConnected = getInitialConnectionStatus()
+
+    @Volatile
+    var isConnected = false
+        private set
+
+    private val lock = Any()
     private var hasValidInternet = false
     private var hasConnection = false
-    private var callback = ConnectionStatusCallback()
+    private var callback: ConnectionStatusCallback? = null
 
-    init {
-        connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
+    // register/unregister happen INSIDE the lock: a start/stop race must never leave
+    // a callback registered with the system while `callback` is already null (such a
+    // callback would leak until the process dies)
+    fun start() {
+        synchronized(lock) {
+            if (callback != null) return
+            isConnected = getInitialConnectionStatus()
+            val cb = ConnectionStatusCallback()
+            callback = cb
+            connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), cb)
+        }
+    }
+
+    fun stop() {
+        synchronized(lock) {
+            val current = callback ?: return
+            callback = null
+            try {
+                connectivityManager.unregisterNetworkCallback(current)
+            } catch (e: Exception) {
+                // already unregistered
+            }
+        }
     }
 
     private fun getInitialConnectionStatus(): Boolean {
-        val network = connectivityManager.activeNetwork ?: return false
+        val network = connectivityManager.activeNetwork ?: run {
+            hasConnection = false
+            hasValidInternet = false
+            return false
+        }
 
         hasConnection = true
         val capabilities = connectivityManager.getNetworkCapabilities(network)
@@ -41,41 +74,45 @@ class ConnectionManager(context: Context) {
 
         override fun onLost(network: android.net.Network) {
             super.onLost(network)
-            activeNetworks.removeAll { activeNetwork -> activeNetwork == network }
-            hasConnection = activeNetworks.isNotEmpty()
+            synchronized(lock) {
+                if (callback !== this) return
+                activeNetworks.removeAll { activeNetwork -> activeNetwork == network }
+                hasConnection = activeNetworks.isNotEmpty()
+            }
             updatedConnectionState()
         }
 
         override fun onCapabilitiesChanged(network: android.net.Network, networkCapabilities: NetworkCapabilities) {
             super.onCapabilitiesChanged(network, networkCapabilities)
-            hasValidInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            synchronized(lock) {
+                if (callback !== this) return
+                hasValidInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
             updatedConnectionState()
         }
 
         override fun onAvailable(network: android.net.Network) {
             super.onAvailable(network)
-            if (activeNetworks.none { activeNetwork -> activeNetwork == network }) {
-                activeNetworks.add(network)
+            synchronized(lock) {
+                if (callback !== this) return
+                if (activeNetworks.none { activeNetwork -> activeNetwork == network }) {
+                    activeNetworks.add(network)
+                }
+                hasConnection = activeNetworks.isNotEmpty()
             }
-            hasConnection = activeNetworks.isNotEmpty()
             updatedConnectionState()
         }
     }
 
     private fun updatedConnectionState() {
-        val oldValue = isConnected
-        isConnected = hasConnection && hasValidInternet
-        if (oldValue != isConnected) {
-            listener?.onConnectionChange()
+        val changed = synchronized(lock) {
+            val oldValue = isConnected
+            isConnected = hasConnection && hasValidInternet
+            oldValue != isConnected
         }
-    }
-
-    fun stop() {
-        try {
-            connectivityManager.unregisterNetworkCallback(callback)
-        } catch (e: Exception) {
-            //already unregistered
+        if (changed) {
+            listener?.onConnectionChange()
         }
     }
 }

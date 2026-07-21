@@ -19,6 +19,13 @@ object Denom {
 
         nativeAssets[lowered]?.let { return it }
 
+        // "x/<name>" is the app-layer (Rujira) namespace for THOR-native tokens —
+        // NOT a synth of a chain called "X"
+        if (lowered.startsWith("x/")) {
+            val symbol = lowered.removePrefix("x/").uppercase()
+            return Asset("THOR", symbol, symbol.substringBefore('-'))
+        }
+
         return if (lowered.none { it == '.' || it == '/' || it == '~' || it == '-' }) {
             // plain denom: a THOR-native token (like "tcy")
             Asset("THOR", lowered.uppercase(), lowered.uppercase())
@@ -28,6 +35,10 @@ object Denom {
         }
     }
 
+    // NOTE: a THOR-native Asset does not carry whether its bank denom uses the plain
+    // ("tcy") or the "x/" ("x/ruji") notation — only denoms in nativeAssets round-trip
+    // exactly. For sends, pass the bank denom string itself; never derive it via
+    // denomFor for an unknown x/-token.
     fun denomFor(asset: Asset): String {
         nativeAssets.entries.firstOrNull { it.value == asset }?.let { return it.key }
 

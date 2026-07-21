@@ -6,6 +6,7 @@ import io.horizontalsystems.thorchainkit.network.BroadcastAmbiguousError
 import io.horizontalsystems.thorchainkit.network.BroadcastError
 import io.horizontalsystems.thorchainkit.network.Network
 import io.horizontalsystems.thorchainkit.network.ThornodeApiProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -80,6 +81,8 @@ class TransactionSender internal constructor(
 
             val tx = try {
                 thornodeApiProvider.fetchTransaction(ambiguity.txHash)
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 null
             }

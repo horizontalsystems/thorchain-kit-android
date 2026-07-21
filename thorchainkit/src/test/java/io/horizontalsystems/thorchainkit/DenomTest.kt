@@ -3,6 +3,7 @@ package io.horizontalsystems.thorchainkit
 import io.horizontalsystems.thorchainkit.models.Asset
 import io.horizontalsystems.thorchainkit.models.Denom
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class DenomTest {
@@ -12,6 +13,19 @@ class DenomTest {
         assertEquals(Asset.Rune, Denom.assetFor("rune"))
         assertEquals(Asset("THOR", "TCY", "TCY"), Denom.assetFor("tcy"))
         assertEquals(Asset("THOR", "RUJI", "RUJI"), Denom.assetFor("x/ruji"))
+    }
+
+    @Test
+    fun assetFor_genericXDenoms_areThorNative_notSynths() {
+        // any x/<name> denom is a THOR-native (Rujira) token, not a synth of chain "X"
+        val asset = Denom.assetFor("x/nami")
+
+        assertEquals(Asset("THOR", "NAMI", "NAMI"), asset)
+        assertFalse(asset.synth)
+        assertFalse(asset.trade)
+        assertFalse(asset.secured)
+
+        assertEquals(Asset("THOR", "BOW-XYK-1", "BOW"), Denom.assetFor("x/bow-xyk-1"))
     }
 
     @Test

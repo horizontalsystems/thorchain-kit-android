@@ -11,7 +11,8 @@ interface MidgardApi {
     suspend fun actions(
         @Query("address") address: String,
         @Query("limit") limit: Int,
-        @Query("nextPageToken") nextPageToken: String?
+        @Query("nextPageToken") nextPageToken: String?,
+        @Query("txid") txId: String?
     ): ActionsResponse
 }
 

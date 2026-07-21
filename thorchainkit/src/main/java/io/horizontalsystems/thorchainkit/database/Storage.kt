@@ -8,7 +8,7 @@ import java.math.BigInteger
 
 class Storage(
     private val database: MainDatabase
-) {
+) : TransactionSyncerStorage {
 
     fun getLastBlockHeight(): Long? {
         return database.lastBlockHeightDao().getLastBlockHeight()?.height
@@ -38,19 +38,31 @@ class Storage(
         )
     }
 
-    fun getPendingTransactions(): List<Transaction> {
+    override fun getPendingTransactions(): List<Transaction> {
         return database.transactionDao().getPending()
     }
 
-    fun saveTransactions(transactions: List<Transaction>) {
+    override fun saveTransactions(transactions: List<Transaction>) {
         database.transactionDao().insert(transactions)
     }
 
-    fun getTransactionSyncTimestamp(): Long? {
+    override fun getTransactionSyncTimestamp(): Long? {
         return database.transactionDao().getSyncState()?.lastTimestamp
     }
 
-    fun saveTransactionSyncTimestamp(timestamp: Long) {
-        database.transactionDao().insert(TransactionSyncState(timestamp))
+    // the sync-state row carries both the watermark and the backfill token: each
+    // write preserves the other field (single-row REPLACE would clobber it otherwise)
+    override fun saveTransactionSyncTimestamp(timestamp: Long) {
+        val current = database.transactionDao().getSyncState()
+        database.transactionDao().insert(TransactionSyncState(timestamp, current?.backfillPageToken))
+    }
+
+    override fun getBackfillPageToken(): String? {
+        return database.transactionDao().getSyncState()?.backfillPageToken
+    }
+
+    override fun saveBackfillPageToken(token: String?) {
+        val current = database.transactionDao().getSyncState()
+        database.transactionDao().insert(TransactionSyncState(current?.lastTimestamp ?: 0, token))
     }
 }

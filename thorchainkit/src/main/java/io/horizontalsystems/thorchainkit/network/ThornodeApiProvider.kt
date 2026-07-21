@@ -5,6 +5,7 @@ import io.horizontalsystems.thorchainkit.models.AccountInfo
 import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.models.DenomBalance
 import io.horizontalsystems.thorchainkit.transaction.TxBuilder
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -12,7 +13,9 @@ import java.math.BigInteger
 import java.net.URL
 import java.util.Base64
 
-// the api list is the injection point for tests; real instances come from `create`
+// the api list is the injection point for tests; real instances come from `create`.
+// it cannot be a second constructor: List<URL> and List<ThornodeApi> erase to the
+// same JVM signature
 class ThornodeApiProvider internal constructor(
     private val apis: List<ThornodeApi>
 ) {
@@ -100,6 +103,10 @@ class ThornodeApiProvider internal constructor(
                     throw error
                 }
                 ambiguousError = error
+            } catch (error: CancellationException) {
+                // cancelled mid-broadcast: the attempt may have reached the node —
+                // surface as ambiguous, never as a plain cancellation the caller ignores
+                throw BroadcastAmbiguousError(expectedHash, error)
             } catch (error: Throwable) {
                 ambiguousError = error
             }
@@ -129,6 +136,8 @@ class ThornodeApiProvider internal constructor(
                 // client errors are definitive answers, not provider outages
                 if (error.code() < 500) throw error
                 lastError = error
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 lastError = error
             }

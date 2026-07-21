@@ -49,6 +49,10 @@ class SyncTimer(
         this.listener = listener
         this.scope = scope
 
+        // (re-)register connectivity monitoring — safe to call repeatedly, and
+        // required so a stop()/start() cycle keeps observing connection changes
+        connectionManager.start()
+
         handleConnectionChange()
     }
 

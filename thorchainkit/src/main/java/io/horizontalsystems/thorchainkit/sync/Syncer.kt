@@ -6,6 +6,7 @@ import io.horizontalsystems.thorchainkit.account.BalanceManager
 import io.horizontalsystems.thorchainkit.database.Storage
 import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.network.ThornodeApiProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,6 +106,10 @@ class Syncer(
             transactionSyncer.sync()
 
             syncState = SyncState.Synced()
+        } catch (error: CancellationException) {
+            // cancellation is not a sync failure — let it propagate so the coroutine
+            // ends quietly instead of overwriting the state after stop()
+            throw error
         } catch (error: Throwable) {
             syncState = SyncState.NotSynced(error)
         }
