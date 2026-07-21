@@ -1,7 +1,6 @@
 package io.horizontalsystems.thorchainkit
 
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.network.MidgardProvider
 import io.horizontalsystems.thorchainkit.network.Network
 import io.horizontalsystems.thorchainkit.network.ThornodeApiProvider
@@ -41,15 +40,15 @@ class SendIntegrationTest {
         val privateKey = Signer.privateKey(seed, network)
         val address = Signer.address(privateKey, network)
 
-        val thornode = ThornodeApiProvider(network.thornodeUrls)
-        val midgard = MidgardProvider(network.midgardUrls)
+        val thornode = ThornodeApiProvider.create(network.thornodeUrls)
+        val midgard = MidgardProvider.create(network.midgardUrls)
 
         val fee = thornode.fetchNativeTxFee()
         val balance = thornode.fetchBalances(address).firstOrNull { it.denom == "rune" }?.amount ?: BigInteger.ZERO
         println("address: $address, rune balance: $balance, network fee: $fee")
         assertTrue("insufficient balance to cover the network fee", balance > fee)
 
-        val sender = TransactionSender(address, thornode)
+        val sender = TransactionSender(address, network, thornode)
         val txHash = sender.send(
             to = address,
             amount = BigInteger.ONE,
@@ -65,7 +64,7 @@ class SendIntegrationTest {
             delay(3000)
             val tx = thornode.fetchTransaction(txHash)
             if (tx != null) {
-                assertEquals("tx failed on-chain: ${tx.rawLog}", 0, tx.code)
+                assertEquals("tx failed on-chain: ${tx.rawLog}", 0, tx.code ?: -1)
                 println("confirmed in block ${tx.height}")
                 confirmed = true
                 break
@@ -79,7 +78,7 @@ class SendIntegrationTest {
             delay(3000)
             val (actions, _) = midgard.fetchActions(address.toString(), limit = 10)
             if (actions.any { action ->
-                    action.incoming.any { it.txId.equals(txHash, ignoreCase = true) }
+                    (action.incoming ?: emptyList()).any { it.txId.equals(txHash, ignoreCase = true) }
                 }) {
                 indexed = true
                 break

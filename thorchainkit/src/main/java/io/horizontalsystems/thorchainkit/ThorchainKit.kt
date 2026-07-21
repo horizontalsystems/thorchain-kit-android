@@ -227,8 +227,8 @@ class ThorchainKit private constructor(
         ): ThorchainKit {
             require(address.prefix == network.addressPrefix) { "Address prefix mismatch: ${address.prefix}" }
 
-            val thornodeApiProvider = ThornodeApiProvider(thornodeUrls)
-            val midgardProvider = MidgardProvider(midgardUrls)
+            val thornodeApiProvider = ThornodeApiProvider.create(thornodeUrls)
+            val midgardProvider = MidgardProvider.create(midgardUrls)
 
             val mainDatabase = ThorchainDatabaseManager.getMainDatabase(context, network, walletId)
             val storage = Storage(mainDatabase)
@@ -237,7 +237,7 @@ class ThorchainKit private constructor(
             val transactionSyncer = TransactionSyncer(address.toString(), midgardProvider, storage)
             val syncTimer = SyncTimer(syncInterval, ConnectionManager(context))
             val syncer = Syncer(address, syncTimer, thornodeApiProvider, balanceManager, transactionSyncer, storage)
-            val transactionSender = TransactionSender(address, thornodeApiProvider)
+            val transactionSender = TransactionSender(address, network, thornodeApiProvider)
 
             return ThorchainKit(
                 address = address,

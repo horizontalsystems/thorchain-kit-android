@@ -5,6 +5,8 @@ import io.horizontalsystems.thorchainkit.ThorchainKit.SyncState
 import io.horizontalsystems.thorchainkit.database.Storage
 import io.horizontalsystems.thorchainkit.models.CoinTransfer
 import io.horizontalsystems.thorchainkit.models.Transaction
+import io.horizontalsystems.thorchainkit.network.ActionTx
+import io.horizontalsystems.thorchainkit.network.InvalidProviderResponse
 import io.horizontalsystems.thorchainkit.network.MidgardAction
 import io.horizontalsystems.thorchainkit.network.MidgardProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,25 +26,54 @@ class TransactionSyncer(
         private const val PAGE_LIMIT = 50
         private const val MAX_PAGES = 20
 
+        // Midgard data is untrusted input: every required field is checked and a
+        // malformed action surfaces as a typed InvalidProviderResponse instead of
+        // an NPE or a silently wrong record
         fun fromMidgardAction(action: MidgardAction): Transaction? {
-            val hash = action.incoming.firstOrNull { it.txId.isNotEmpty() }?.txId
-                ?: action.outgoing.firstOrNull { it.txId.isNotEmpty() }?.txId
+            val incoming = action.incoming
+                ?: throw InvalidProviderResponse("midgard action: missing 'in'")
+            val outgoing = action.outgoing
+                ?: throw InvalidProviderResponse("midgard action: missing 'out'")
+
+            val hash = incoming.firstOrNull { !it.txId.isNullOrEmpty() }?.txId
+                ?: outgoing.firstOrNull { !it.txId.isNullOrEmpty() }?.txId
                 ?: return null
 
             return Transaction(
                 hash = hash,
-                blockHeight = action.height,
-                timestamp = action.date / 1_000_000,
-                type = action.type,
-                status = action.status,
+                blockHeight = action.height
+                    ?: throw InvalidProviderResponse("midgard action: missing height"),
+                timestamp = (action.date
+                    ?: throw InvalidProviderResponse("midgard action: missing date")) / 1_000_000,
+                type = action.type
+                    ?: throw InvalidProviderResponse("midgard action: missing type"),
+                status = action.status
+                    ?: throw InvalidProviderResponse("midgard action: missing status"),
                 memo = extractMemo(action),
-                incoming = action.incoming.map { tx ->
-                    tx.coins.map { CoinTransfer(tx.address, it.asset, BigInteger(it.amount)) }
-                }.flatten(),
-                outgoing = action.outgoing.map { tx ->
-                    tx.coins.map { CoinTransfer(tx.address, it.asset, BigInteger(it.amount)) }
-                }.flatten()
+                incoming = coinTransfers(incoming),
+                outgoing = coinTransfers(outgoing)
             )
+        }
+
+        private fun coinTransfers(txs: List<ActionTx>): List<CoinTransfer> {
+            return txs.flatMap { tx ->
+                val address = tx.address
+                    ?: throw InvalidProviderResponse("midgard action: missing address")
+
+                tx.coins.orEmpty().map { coin ->
+                    val asset = coin.asset
+                        ?: throw InvalidProviderResponse("midgard action: missing coin asset")
+                    val amountString = coin.amount
+                        ?: throw InvalidProviderResponse("midgard action: missing coin amount")
+                    val amount = try {
+                        BigInteger(amountString)
+                    } catch (error: NumberFormatException) {
+                        throw InvalidProviderResponse("midgard action: invalid amount: $amountString")
+                    }
+
+                    CoinTransfer(address, asset, amount)
+                }
+            }
         }
 
         // memo sits inside the type-specific metadata object: metadata.send.memo, metadata.swap.memo, ...

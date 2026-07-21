@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import io.horizontalsystems.thorchainkit.models.AccountInfo
 import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.models.DenomBalance
+import io.horizontalsystems.thorchainkit.transaction.TxBuilder
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -11,23 +12,20 @@ import java.math.BigInteger
 import java.net.URL
 import java.util.Base64
 
-class ThornodeApiProvider(
-    baseUrls: List<URL>
+// the api list is the injection point for tests; real instances come from `create`
+class ThornodeApiProvider internal constructor(
+    private val apis: List<ThornodeApi>
 ) {
-
-    private val apis: List<ThornodeApi> = baseUrls.map {
-        Retrofit.Builder()
-            .baseUrl(it.toString())
-            .client(ApiClient.build())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ThornodeApi::class.java)
-    }
 
     suspend fun fetchBalances(address: Address): List<DenomBalance> =
         withFailover { api ->
-            api.balances(address.toString()).balances.map {
-                DenomBalance(it.denom, BigInteger(it.amount))
+            val balances = api.balances(address.toString()).balances
+                ?: throw InvalidProviderResponse("balances: missing 'balances' field")
+
+            balances.map {
+                val denom = it.denom
+                    ?: throw InvalidProviderResponse("balances: missing denom")
+                DenomBalance(denom, parseAmount(it.amount, "balances"))
             }
         }
 
@@ -35,7 +33,10 @@ class ThornodeApiProvider(
     suspend fun fetchAccount(address: Address): AccountInfo? =
         withFailover { api ->
             try {
-                parseAccountInfo(api.account(address.toString()).account)
+                val account = api.account(address.toString()).account
+                    ?: throw InvalidProviderResponse("account: missing 'account' field")
+
+                parseAccountInfo(account, address.toString())
             } catch (error: HttpException) {
                 if (error.code() == 404) null else throw error
             }
@@ -43,37 +44,76 @@ class ThornodeApiProvider(
 
     suspend fun fetchNativeTxFee(): BigInteger =
         withFailover { api ->
-            BigInteger(api.network().nativeTxFeeRune)
+            parseAmount(api.network().nativeTxFeeRune, "network fee")
         }
 
     suspend fun fetchLastBlockHeight(): Long =
         withFailover { api ->
-            api.lastBlock().first().thorchain
+            api.lastBlock().firstOrNull()?.thorchain
+                ?: throw InvalidProviderResponse("lastblock: missing height")
         }
 
     suspend fun fetchChainId(): String =
         withFailover { api ->
-            api.nodeInfo().defaultNodeInfo.network
+            api.nodeInfo().defaultNodeInfo?.network?.takeIf { it.isNotEmpty() }
+                ?: throw InvalidProviderResponse("node_info: missing network")
         }
 
-    suspend fun broadcast(txRaw: ByteArray): String =
-        withFailover { api ->
-            val response = api.broadcast(
-                BroadcastRequest(txBytes = Base64.getEncoder().encodeToString(txRaw))
-            ).txResponse
+    // Broadcasting is not idempotent-safe to *report* on: the request can reach the node
+    // and still fail locally (timeout, gateway error). Semantics:
+    //  - CheckTx rejection (code != 0) is a definitive answer: throw BroadcastError, no failover
+    //  - "tx already in mempool cache" means an earlier attempt reached the node: success
+    //  - anything else is ambiguous: throw BroadcastAmbiguousError carrying the locally
+    //    computed tx hash so the caller can resolve it via fetchTransaction — the tx may
+    //    have been accepted, and reporting a plain failure invites a wallet-level retry
+    //    that would be a second real payment
+    suspend fun broadcast(txRaw: ByteArray): String {
+        val expectedHash = TxBuilder.txHash(txRaw)
+        val request = BroadcastRequest(txBytes = Base64.getEncoder().encodeToString(txRaw))
+        var ambiguousError: Throwable? = null
 
-            if (response.code != 0) {
-                throw BroadcastError(response.code, response.rawLog ?: "")
+        apis.forEach { api ->
+            try {
+                val response = api.broadcast(request).txResponse
+                    ?: throw InvalidProviderResponse("broadcast: missing tx_response")
+                val code = response.code
+                    ?: throw InvalidProviderResponse("broadcast: missing code")
+
+                if (code == 0) return expectedHash
+
+                // this exact tx is already known to the node — a previous attempt made it
+                if (code == CODE_TX_IN_MEMPOOL_CACHE && response.codespace == SDK_CODESPACE) {
+                    return expectedHash
+                }
+
+                throw BroadcastError(code, response.rawLog ?: "")
+            } catch (error: BroadcastError) {
+                // If an earlier attempt already failed ambiguously, this rejection may be a
+                // side effect of that attempt having succeeded (e.g. "sequence mismatch"
+                // once the tx committed and left the mempool cache) — it must stay
+                // ambiguous so the caller resolves the true outcome via tx lookup.
+                if (ambiguousError != null) throw BroadcastAmbiguousError(expectedHash, error)
+                throw error
+            } catch (error: HttpException) {
+                if (error.code() < 500) {
+                    if (ambiguousError != null) throw BroadcastAmbiguousError(expectedHash, error)
+                    throw error
+                }
+                ambiguousError = error
+            } catch (error: Throwable) {
+                ambiguousError = error
             }
-
-            response.txhash
         }
+
+        throw BroadcastAmbiguousError(expectedHash, ambiguousError)
+    }
 
     // null while the transaction is not yet included in a block
     suspend fun fetchTransaction(hash: String): TxResponse? =
         withFailover { api ->
             try {
                 api.transaction(hash).txResponse
+                    ?: throw InvalidProviderResponse("tx by hash: missing tx_response")
             } catch (error: HttpException) {
                 if (error.code() == 404) null else throw error
             }
@@ -89,8 +129,6 @@ class ThornodeApiProvider(
                 // client errors are definitive answers, not provider outages
                 if (error.code() < 500) throw error
                 lastError = error
-            } catch (error: BroadcastError) {
-                throw error
             } catch (error: Throwable) {
                 lastError = error
             }
@@ -101,7 +139,35 @@ class ThornodeApiProvider(
 
     companion object {
 
-        fun parseAccountInfo(account: JsonObject): AccountInfo {
+        fun create(baseUrls: List<URL>) = ThornodeApiProvider(
+            baseUrls.map {
+                Retrofit.Builder()
+                    .baseUrl(it.toString())
+                    .client(ApiClient.build())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
+                    .create(ThornodeApi::class.java)
+            }
+        )
+
+        // cosmos-sdk root codespace, error 19: ErrTxInMempoolCache
+        const val SDK_CODESPACE = "sdk"
+        const val CODE_TX_IN_MEMPOOL_CACHE = 19
+
+        private fun parseAmount(value: String?, context: String): BigInteger {
+            val string = value ?: throw InvalidProviderResponse("$context: missing amount")
+            val amount = try {
+                BigInteger(string)
+            } catch (error: NumberFormatException) {
+                throw InvalidProviderResponse("$context: invalid amount: $string")
+            }
+            if (amount.signum() < 0) {
+                throw InvalidProviderResponse("$context: negative amount: $string")
+            }
+            return amount
+        }
+
+        fun parseAccountInfo(account: JsonObject, expectedAddress: String? = null): AccountInfo {
             val type = account.get("@type")?.asString ?: ""
             val fields = if (account.has("base_account")) {
                 account.getAsJsonObject("base_account")
@@ -110,9 +176,19 @@ class ThornodeApiProvider(
                 account
             }
 
+            // the response must be about the account we asked for
+            if (expectedAddress != null) {
+                val address = fields.get("address")?.asString
+                if (address != expectedAddress) {
+                    throw InvalidProviderResponse("account: address mismatch: $address, expected: $expectedAddress")
+                }
+            }
+
             return AccountInfo(
-                accountNumber = fields.get("account_number").asString.toLong(),
-                sequence = fields.get("sequence").asString.toLong()
+                accountNumber = fields.get("account_number")?.asString?.toLongOrNull()
+                    ?: throw InvalidProviderResponse("account: missing account_number"),
+                sequence = fields.get("sequence")?.asString?.toLongOrNull()
+                    ?: throw InvalidProviderResponse("account: missing sequence")
             )
         }
     }
@@ -122,3 +198,13 @@ class BroadcastError(val code: Int, val log: String) : Throwable() {
     override val message: String
         get() = "Broadcast failed with code: $code, log: $log"
 }
+
+// the broadcast request failed locally, but the node may still have accepted the tx
+class BroadcastAmbiguousError(val txHash: String, cause: Throwable?) : Throwable(cause) {
+    override val message: String
+        get() = "Broadcast result unknown for tx $txHash (${cause?.message})"
+}
+
+// the provider returned a response that does not match the expected shape — treated
+// as a provider failure (retryable via failover), never as data
+class InvalidProviderResponse(override val message: String) : Throwable()

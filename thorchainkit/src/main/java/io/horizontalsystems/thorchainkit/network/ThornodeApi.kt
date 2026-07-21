@@ -35,35 +35,40 @@ interface ThornodeApi {
     suspend fun transaction(@Path("hash") hash: String): TxByHashResponse
 }
 
+// All response DTO fields are nullable on purpose: Gson populates them via reflection and
+// bypasses Kotlin null-safety, so a malformed provider response would otherwise smuggle
+// nulls (or primitive defaults like code == 0) into "non-null" types. Validation into
+// non-null domain values happens in ThornodeApiProvider.
+
 data class BalancesResponse(
-    val balances: List<CoinResponse>
+    val balances: List<CoinResponse>?
 )
 
 data class CoinResponse(
-    val denom: String,
-    val amount: String
+    val denom: String?,
+    val amount: String?
 )
 
 // account payload varies: BaseAccount fields are top-level, ModuleAccount nests
 // them under base_account — parsed manually in ThornodeApiProvider
 data class AccountResponse(
-    val account: JsonObject
+    val account: JsonObject?
 )
 
 data class NetworkResponse(
-    @SerializedName("native_tx_fee_rune") val nativeTxFeeRune: String
+    @SerializedName("native_tx_fee_rune") val nativeTxFeeRune: String?
 )
 
 data class LastBlockResponse(
-    val chain: String,
-    val thorchain: Long
+    val chain: String?,
+    val thorchain: Long?
 )
 
 data class NodeInfoResponse(
-    @SerializedName("default_node_info") val defaultNodeInfo: DefaultNodeInfo
+    @SerializedName("default_node_info") val defaultNodeInfo: DefaultNodeInfo?
 ) {
     data class DefaultNodeInfo(
-        val network: String
+        val network: String?
     )
 }
 
@@ -73,16 +78,17 @@ data class BroadcastRequest(
 )
 
 data class BroadcastResponse(
-    @SerializedName("tx_response") val txResponse: TxResponse
+    @SerializedName("tx_response") val txResponse: TxResponse?
 )
 
 data class TxByHashResponse(
-    @SerializedName("tx_response") val txResponse: TxResponse
+    @SerializedName("tx_response") val txResponse: TxResponse?
 )
 
 data class TxResponse(
-    val height: String,
-    val txhash: String,
-    val code: Int,
+    val height: String?,
+    val txhash: String?,
+    val codespace: String?,
+    val code: Int?,
     @SerializedName("raw_log") val rawLog: String?
 )

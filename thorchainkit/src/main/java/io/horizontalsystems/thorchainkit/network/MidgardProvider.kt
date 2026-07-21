@@ -5,18 +5,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.URL
 
-class MidgardProvider(
-    baseUrls: List<URL>
+// the api list is the injection point for tests; real instances come from `create`
+class MidgardProvider internal constructor(
+    private val apis: List<MidgardApi>
 ) {
-
-    private val apis: List<MidgardApi> = baseUrls.map {
-        Retrofit.Builder()
-            .baseUrl(it.toString())
-            .client(ApiClient.build())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(MidgardApi::class.java)
-    }
 
     suspend fun fetchActions(
         address: String,
@@ -28,7 +20,10 @@ class MidgardProvider(
         apis.forEach { api ->
             try {
                 val response = api.actions(address, limit, nextPageToken)
-                return Pair(response.actions, response.meta.nextPageToken?.takeIf { it.isNotEmpty() })
+                val actions = response.actions
+                    ?: throw InvalidProviderResponse("actions: missing 'actions' field")
+
+                return Pair(actions, response.meta?.nextPageToken?.takeIf { it.isNotEmpty() })
             } catch (error: HttpException) {
                 if (error.code() < 500) throw error
                 lastError = error
@@ -38,5 +33,19 @@ class MidgardProvider(
         }
 
         throw lastError ?: IllegalStateException("No midgard providers configured")
+    }
+
+    companion object {
+
+        fun create(baseUrls: List<URL>) = MidgardProvider(
+            baseUrls.map {
+                Retrofit.Builder()
+                    .baseUrl(it.toString())
+                    .client(ApiClient.build())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
+                    .create(MidgardApi::class.java)
+            }
+        )
     }
 }

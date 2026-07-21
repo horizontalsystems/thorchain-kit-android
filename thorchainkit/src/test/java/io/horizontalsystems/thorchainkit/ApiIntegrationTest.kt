@@ -14,8 +14,8 @@ import org.junit.Test
 @Ignore("hits live mainnet endpoints")
 class ApiIntegrationTest {
 
-    private val thornode = ThornodeApiProvider(Network.Mainnet.thornodeUrls)
-    private val midgard = MidgardProvider(Network.Mainnet.midgardUrls)
+    private val thornode = ThornodeApiProvider.create(Network.Mainnet.thornodeUrls)
+    private val midgard = MidgardProvider.create(Network.Mainnet.midgardUrls)
 
     // reserve module account — always exists and holds RUNE
     private val reserve = Address.fromString("thor1dheycdevq39qlkxs2a6wuuzyn4aqxhve4qxtxt", Network.Mainnet)

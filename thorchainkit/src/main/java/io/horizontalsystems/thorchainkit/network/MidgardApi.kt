@@ -15,9 +15,13 @@ interface MidgardApi {
     ): ActionsResponse
 }
 
+// Nullable DTO fields on purpose: Gson bypasses Kotlin null-safety, so malformed
+// responses would otherwise smuggle nulls into non-null types. Validation happens
+// in MidgardProvider / TransactionSyncer.
+
 data class ActionsResponse(
-    val actions: List<MidgardAction>,
-    val meta: Meta
+    val actions: List<MidgardAction>?,
+    val meta: Meta?
 ) {
     data class Meta(
         val nextPageToken: String?
@@ -25,23 +29,23 @@ data class ActionsResponse(
 }
 
 data class MidgardAction(
-    val type: String,
-    val status: String,
-    val date: Long,
-    val height: Long,
-    @SerializedName("in") val incoming: List<ActionTx>,
-    @SerializedName("out") val outgoing: List<ActionTx>,
-    val pools: List<String>,
+    val type: String?,
+    val status: String?,
+    val date: Long?,
+    val height: Long?,
+    @SerializedName("in") val incoming: List<ActionTx>?,
+    @SerializedName("out") val outgoing: List<ActionTx>?,
+    val pools: List<String>?,
     val metadata: JsonObject?
 )
 
 data class ActionTx(
-    val address: String,
-    @SerializedName("txID") val txId: String,
-    val coins: List<ActionCoin>
+    val address: String?,
+    @SerializedName("txID") val txId: String?,
+    val coins: List<ActionCoin>?
 )
 
 data class ActionCoin(
-    val asset: String,
-    val amount: String
+    val asset: String?,
+    val amount: String?
 )

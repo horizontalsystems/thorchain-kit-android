@@ -13,6 +13,7 @@ import io.horizontalsystems.thorchainkit.models.Asset
 import types.MsgDepositOuterClass.MsgDeposit
 import types.MsgSendOuterClass.MsgSend
 import java.math.BigInteger
+import java.security.MessageDigest
 
 object TxBuilder {
 
@@ -25,6 +26,14 @@ object TxBuilder {
     // gas limits as used by xchainjs; THORChain has no gas market, the limit just needs to be sufficient
     const val DEFAULT_GAS_LIMIT = 6_000_000L
     const val DEPOSIT_GAS_LIMIT = 600_000_000L
+
+    // THORChain/Cosmos tx hash: uppercase hex SHA-256 of the raw signed tx bytes.
+    // Computed locally so the broadcast outcome can be resolved (via tx lookup)
+    // even when the broadcast request itself fails ambiguously.
+    fun txHash(txRaw: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(txRaw)
+        return digest.joinToString("") { "%02X".format(it) }
+    }
 
     fun msgSend(from: Address, to: Address, amount: BigInteger, denom: String): Any {
         val message = MsgSend.newBuilder()
