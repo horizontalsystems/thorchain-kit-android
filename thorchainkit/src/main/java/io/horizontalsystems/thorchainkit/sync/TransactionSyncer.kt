@@ -45,8 +45,9 @@ class TransactionSyncer(
                 hash = hash,
                 blockHeight = action.height
                     ?: throw InvalidProviderResponse("midgard action: missing height"),
+                // Midgard reports date in nanoseconds; consumers expect unix seconds
                 timestamp = (action.date
-                    ?: throw InvalidProviderResponse("midgard action: missing date")) / 1_000_000,
+                    ?: throw InvalidProviderResponse("midgard action: missing date")) / 1_000_000_000,
                 type = action.type
                     ?: throw InvalidProviderResponse("midgard action: missing type"),
                 status = action.status

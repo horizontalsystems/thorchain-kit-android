@@ -19,7 +19,7 @@ import io.horizontalsystems.thorchainkit.models.TransactionSyncState
         Transaction::class,
         TransactionSyncState::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class)
@@ -37,9 +37,18 @@ abstract class MainDatabase : RoomDatabase() {
             }
         }
 
+        // timestamps were stored in milliseconds (Midgard nanoseconds / 1_000_000)
+        // while consumers expect unix seconds
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE `Transaction` SET timestamp = timestamp / 1000")
+                db.execSQL("UPDATE TransactionSyncState SET lastTimestamp = lastTimestamp / 1000")
+            }
+        }
+
         fun getInstance(context: Context, databaseName: String): MainDatabase {
             return Room.databaseBuilder(context, MainDatabase::class.java, databaseName)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 // last resort only: everything stored is a re-syncable cache (no keys)
                 .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()

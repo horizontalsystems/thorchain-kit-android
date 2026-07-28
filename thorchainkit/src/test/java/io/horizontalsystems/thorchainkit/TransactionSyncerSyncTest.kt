@@ -18,10 +18,10 @@ import org.junit.Test
 
 private const val WALLET = "thor1gm00vwsfcp48enm4uv9e5dhm37jtd0ye27wrx0"
 
-private fun action(hash: String, timestampMs: Long, status: String = "success") = MidgardAction(
+private fun action(hash: String, timestamp: Long, status: String = "success") = MidgardAction(
     type = "send",
     status = status,
-    date = timestampMs * 1_000_000,
+    date = timestamp * 1_000_000_000,
     height = 100,
     incoming = listOf(
         ActionTx(

@@ -53,7 +53,7 @@ class TransactionSyncerTest {
 
         assertEquals("E0C97FCAB81C8CF22B235F38A7CAA97134719BD36C26746DA900B1DC7424E460", transaction.hash)
         assertEquals(27069723L, transaction.blockHeight)
-        assertEquals(1784454197789L, transaction.timestamp)
+        assertEquals(1784454197L, transaction.timestamp)
         assertEquals("send", transaction.type)
         assertEquals("success", transaction.status)
         assertEquals("hello", transaction.memo)
