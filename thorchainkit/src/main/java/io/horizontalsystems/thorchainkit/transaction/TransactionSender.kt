@@ -62,6 +62,7 @@ class TransactionSender internal constructor(
             // cannot make the kit sign a transaction valid on a different network
             chainId = network.chainId,
             gasLimit = gasLimit,
+            feeDenom = network.assetResolver.nativeDenom,
             signer = signer
         )
 

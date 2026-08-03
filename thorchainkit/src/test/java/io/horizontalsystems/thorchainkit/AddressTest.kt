@@ -14,11 +14,34 @@ class AddressTest {
     private val compressedPublicKey = "02205c476a22d5fe10b74489db9479d0e36e25a32da393a771fcf12380136a451f".hexToBytes()
     private val mainnetAddress = "thor1gm00vwsfcp48enm4uv9e5dhm37jtd0ye27wrx0"
     private val stagenetAddress = "sthor1gm00vwsfcp48enm4uv9e5dhm37jtd0ye78j4s3"
+    // Maya reuses SLIP-44 coin type 931, so the same key yields the same payload as THORChain;
+    // only the "maya" bech32 HRP differs. Vector independently derived (pure-python bech32).
+    private val mayaAddress = "maya1gm00vwsfcp48enm4uv9e5dhm37jtd0ye2fs0sl"
 
     @Test
     fun fromPublicKey() {
         assertEquals(mainnetAddress, Address.fromPublicKey(compressedPublicKey, Network.Mainnet).toString())
         assertEquals(stagenetAddress, Address.fromPublicKey(compressedPublicKey, Network.Stagenet).toString())
+        assertEquals(mayaAddress, Address.fromPublicKey(compressedPublicKey, Network.MayaMainnet).toString())
+    }
+
+    @Test
+    fun fromString_maya() {
+        val address = Address.fromString(mayaAddress, Network.MayaMainnet)
+
+        assertEquals("maya", address.prefix)
+        assertEquals(mayaAddress, address.toString())
+    }
+
+    @Test
+    fun fromString_mayaWrongNetwork() {
+        // a maya address must not validate as THORChain, and vice versa
+        assertThrows(AddressValidationException::class.java) {
+            Address.fromString(mayaAddress, Network.Mainnet)
+        }
+        assertThrows(AddressValidationException::class.java) {
+            Address.fromString(mainnetAddress, Network.MayaMainnet)
+        }
     }
 
     @Test

@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.horizontalsystems.thorchainkit.models.Denom
 import io.horizontalsystems.thorchainkit.network.Network
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -62,9 +61,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             Text("ThorchainKit Sample", style = MaterialTheme.typography.h6)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Network.entries.forEach { network ->
+                selectableNetworks.forEach { network ->
                     OutlinedButton(onClick = { viewModel.network = network }) {
-                        Text(if (network == viewModel.network) "✓ ${network.name}" else network.name)
+                        Text(if (network == viewModel.network) "✓ ${network.displayName}" else network.displayName)
                     }
                 }
             }
@@ -91,7 +90,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
             viewModel.error?.let { Text("Error: $it", color = MaterialTheme.colors.error) }
         } else {
-            Text("${kit.network.name} · block ${viewModel.lastBlockHeight}", style = MaterialTheme.typography.caption)
+            Text("${kit.network.displayName} · block ${viewModel.lastBlockHeight}", style = MaterialTheme.typography.caption)
             Text(kit.receiveAddress, style = MaterialTheme.typography.body2)
             Text("Sync: ${viewModel.syncState}", style = MaterialTheme.typography.caption)
             Text("Tx sync: ${viewModel.transactionsSyncState}", style = MaterialTheme.typography.caption)
@@ -104,7 +103,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             viewModel.balances.toSortedMap().forEach { (denom, amount) ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(denom)
-                    Text(amount.toRune())
+                    Text(amount.toRune(kit.decimals))
                 }
             }
 
@@ -138,9 +137,12 @@ private fun SendSection(viewModel: MainViewModel) {
     var amount by rememberSaveable { mutableStateOf("") }
     var memo by rememberSaveable { mutableStateOf("") }
 
-    Text("Send RUNE", style = MaterialTheme.typography.h6)
+    // native settlement asset of the selected chain (RUNE on THORChain, CACAO on Maya)
+    val symbol = viewModel.kit?.nativeDenom?.uppercase() ?: "RUNE"
+
+    Text("Send $symbol", style = MaterialTheme.typography.h6)
     OutlinedTextField(value = to, onValueChange = { to = it }, label = { Text("To") }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount (RUNE)") }, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount ($symbol)") }, modifier = Modifier.fillMaxWidth())
     OutlinedTextField(value = memo, onValueChange = { memo = it }, label = { Text("Memo (optional)") }, modifier = Modifier.fillMaxWidth())
     Button(
         onClick = { viewModel.send(to, amount, memo) },
@@ -152,6 +154,16 @@ private fun SendSection(viewModel: MainViewModel) {
     viewModel.sendResult?.let { Text(it, style = MaterialTheme.typography.caption) }
 }
 
-private fun BigInteger.toRune(): String {
-    return BigDecimal(this).movePointLeft(Denom.DECIMALS).stripTrailingZeros().toPlainString()
+// mainnet chains shown in the sample selector (stagenet is a kit config option, not surfaced here)
+private val selectableNetworks = listOf(Network.Mainnet, Network.MayaMainnet)
+
+private val Network.displayName: String
+    get() = when (this) {
+        Network.Mainnet -> "THORChain"
+        Network.MayaMainnet -> "Mayachain"
+        else -> name
+    }
+
+private fun BigInteger.toRune(decimals: Int): String {
+    return BigDecimal(this).movePointLeft(decimals).stripTrailingZeros().toPlainString()
 }

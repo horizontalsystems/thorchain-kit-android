@@ -1,11 +1,11 @@
 package io.horizontalsystems.thorchainkit
 
+import com.google.gson.JsonObject
 import io.horizontalsystems.thorchainkit.network.AccountResponse
 import io.horizontalsystems.thorchainkit.network.BalancesResponse
 import io.horizontalsystems.thorchainkit.network.BroadcastRequest
 import io.horizontalsystems.thorchainkit.network.BroadcastResponse
-import io.horizontalsystems.thorchainkit.network.LastBlockResponse
-import io.horizontalsystems.thorchainkit.network.NetworkResponse
+import io.horizontalsystems.thorchainkit.network.ConstantsResponse
 import io.horizontalsystems.thorchainkit.network.NodeInfoResponse
 import io.horizontalsystems.thorchainkit.network.ThornodeApi
 import io.horizontalsystems.thorchainkit.network.TxByHashResponse
@@ -24,10 +24,10 @@ open class FakeThornodeApi : ThornodeApi {
     override suspend fun account(address: String): AccountResponse =
         throw NotImplementedError("account")
 
-    override suspend fun network(): NetworkResponse =
-        throw NotImplementedError("network")
+    override suspend fun constants(protocol: String): ConstantsResponse =
+        throw NotImplementedError("constants")
 
-    override suspend fun lastBlock(): List<LastBlockResponse> =
+    override suspend fun lastBlock(protocol: String): List<JsonObject> =
         throw NotImplementedError("lastBlock")
 
     override suspend fun nodeInfo(): NodeInfoResponse =

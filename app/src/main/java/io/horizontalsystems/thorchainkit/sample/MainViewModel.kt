@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.thorchainkit.ThorchainKit
 import io.horizontalsystems.thorchainkit.models.Address
-import io.horizontalsystems.thorchainkit.models.Denom
 import io.horizontalsystems.thorchainkit.models.Transaction
 import io.horizontalsystems.thorchainkit.network.Network
 import io.horizontalsystems.thorchainkit.transaction.Signer
@@ -80,7 +79,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             sendResult = runCatching {
                 val txHash = kit.send(
                     to = Address.fromString(to.trim(), network),
-                    amount = BigDecimal(amount).movePointRight(Denom.DECIMALS).toBigInteger(),
+                    amount = BigDecimal(amount).movePointRight(kit.decimals).toBigInteger(),
                     memo = memo.ifBlank { null },
                     signer = signer
                 )

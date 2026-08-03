@@ -87,6 +87,7 @@ class WalletCoreVectorsTest {
             sequence = 0,
             chainId = "thorchain-1",
             gasLimit = TxBuilder.DEFAULT_GAS_LIMIT,
+            feeDenom = "rune",
             signer = signer
         )
 
