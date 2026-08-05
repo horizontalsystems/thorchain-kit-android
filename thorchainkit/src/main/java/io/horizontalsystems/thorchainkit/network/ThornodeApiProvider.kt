@@ -17,7 +17,9 @@ import java.util.Base64
 // it cannot be a second constructor: List<URL> and List<ThornodeApi> erase to the
 // same JVM signature
 class ThornodeApiProvider internal constructor(
-    private val apis: List<ThornodeApi>
+    private val apis: List<ThornodeApi>,
+    // API path segment for the protocol module, e.g. "thorchain" / "mayachain"
+    private val protocolPath: String = "thorchain"
 ) {
 
     suspend fun fetchBalances(address: Address): List<DenomBalance> =
@@ -47,13 +49,30 @@ class ThornodeApiProvider internal constructor(
 
     suspend fun fetchNativeTxFee(): BigInteger =
         withFailover { api ->
-            parseAmount(api.network().nativeTxFeeRune, "network fee")
+            // NativeTransactionFee is in the chain's base units (e.g. 2000000 = 0.02 RUNE at
+            // 8 decimals; 2000000000 = 0.2 CACAO at 10 decimals) — same key on both chains
+            val fee = api.constants(protocolPath).int64Values?.nativeTransactionFee
+                ?: throw InvalidProviderResponse("constants: missing NativeTransactionFee")
+            if (fee < 0) throw InvalidProviderResponse("constants: negative fee: $fee")
+            BigInteger.valueOf(fee)
         }
 
     suspend fun fetchLastBlockHeight(): Long =
         withFailover { api ->
-            api.lastBlock().firstOrNull()?.thorchain
-                ?: throw InvalidProviderResponse("lastblock: missing height")
+            val entry = api.lastBlock(protocolPath).firstOrNull()
+                ?: throw InvalidProviderResponse("lastblock: empty response")
+
+            // the height is keyed by the protocol module name, which equals protocolPath
+            // ("thorchain" / "mayachain") — a fixed `thorchain` field would read null on Maya
+            val height = entry.get(protocolPath)
+            if (height == null || height.isJsonNull) {
+                throw InvalidProviderResponse("lastblock: missing '$protocolPath' height")
+            }
+            try {
+                height.asLong
+            } catch (error: NumberFormatException) {
+                throw InvalidProviderResponse("lastblock: invalid height: $height")
+            }
         }
 
     suspend fun fetchChainId(): String =
@@ -148,7 +167,7 @@ class ThornodeApiProvider internal constructor(
 
     companion object {
 
-        fun create(baseUrls: List<URL>) = ThornodeApiProvider(
+        fun create(baseUrls: List<URL>, protocolPath: String = "thorchain") = ThornodeApiProvider(
             baseUrls.map {
                 Retrofit.Builder()
                     .baseUrl(it.toString())
@@ -156,7 +175,8 @@ class ThornodeApiProvider internal constructor(
                     .addConverterFactory(GsonConverterFactory.create())
                     .build()
                     .create(ThornodeApi::class.java)
-            }
+            },
+            protocolPath
         )
 
         // cosmos-sdk root codespace, error 19: ErrTxInMempoolCache

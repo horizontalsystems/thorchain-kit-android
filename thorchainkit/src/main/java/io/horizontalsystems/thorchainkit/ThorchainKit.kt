@@ -6,7 +6,6 @@ import io.horizontalsystems.thorchainkit.database.Storage
 import io.horizontalsystems.thorchainkit.database.ThorchainDatabaseManager
 import io.horizontalsystems.thorchainkit.models.Address
 import io.horizontalsystems.thorchainkit.models.Asset
-import io.horizontalsystems.thorchainkit.models.Denom
 import io.horizontalsystems.thorchainkit.models.Transaction
 import io.horizontalsystems.thorchainkit.network.ConnectionManager
 import io.horizontalsystems.thorchainkit.network.MidgardProvider
@@ -45,6 +44,15 @@ class ThorchainKit private constructor(
 
     val receiveAddress: String
         get() = address.toString()
+
+    // decimals of the chain's native settlement asset (e.g. 8 for RUNE) — per-chain,
+    // so consumers format amounts without hardcoding a constant
+    val decimals: Int
+        get() = network.assetResolver.decimals
+
+    // bank denom of the chain's native settlement asset (e.g. "rune")
+    val nativeDenom: String
+        get() = network.assetResolver.nativeDenom
 
     val lastBlockHeight: Long
         get() = syncer.lastBlockHeight
@@ -132,7 +140,7 @@ class ThorchainKit private constructor(
     suspend fun send(
         to: Address,
         amount: BigInteger,
-        denom: String = Denom.RUNE,
+        denom: String = network.assetResolver.nativeDenom,
         memo: String? = null,
         signer: Signer
     ): String {
@@ -227,13 +235,13 @@ class ThorchainKit private constructor(
         ): ThorchainKit {
             require(address.prefix == network.addressPrefix) { "Address prefix mismatch: ${address.prefix}" }
 
-            val thornodeApiProvider = ThornodeApiProvider.create(thornodeUrls)
+            val thornodeApiProvider = ThornodeApiProvider.create(thornodeUrls, network.protocolPath)
             val midgardProvider = MidgardProvider.create(midgardUrls)
 
             val mainDatabase = ThorchainDatabaseManager.getMainDatabase(context, network, walletId)
             val storage = Storage(mainDatabase)
 
-            val balanceManager = BalanceManager(storage)
+            val balanceManager = BalanceManager(storage, network)
             val transactionSyncer = TransactionSyncer(address.toString(), midgardProvider, storage)
             val syncTimer = SyncTimer(syncInterval, ConnectionManager(context))
             val syncer = Syncer(address, syncTimer, thornodeApiProvider, balanceManager, transactionSyncer, storage)

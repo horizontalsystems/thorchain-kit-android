@@ -19,11 +19,17 @@ interface ThornodeApi {
     @GET("cosmos/auth/v1beta1/accounts/{address}")
     suspend fun account(@Path("address") address: String): AccountResponse
 
-    @GET("thorchain/network")
-    suspend fun network(): NetworkResponse
+    // protocol path segment is chain-driven ("thorchain" / "mayachain"); Retrofit fills
+    // every {protocol} occurrence from the single argument. The constants endpoint carries
+    // the native tx fee under the same `NativeTransactionFee` key on both chains (in the
+    // chain's base units), unlike /network whose fee field name is chain-specific
+    @GET("{protocol}/constants")
+    suspend fun constants(@Path(value = "protocol", encoded = true) protocol: String): ConstantsResponse
 
-    @GET("thorchain/lastblock/thorchain")
-    suspend fun lastBlock(): List<LastBlockResponse>
+    // the height is keyed by the protocol module name ("thorchain" / "mayachain"), which
+    // differs per chain, so the entry is parsed generically in ThornodeApiProvider
+    @GET("{protocol}/lastblock/{protocol}")
+    suspend fun lastBlock(@Path(value = "protocol", encoded = true) protocol: String): List<JsonObject>
 
     @GET("cosmos/base/tendermint/v1beta1/node_info")
     suspend fun nodeInfo(): NodeInfoResponse
@@ -55,14 +61,13 @@ data class AccountResponse(
     val account: JsonObject?
 )
 
-data class NetworkResponse(
-    @SerializedName("native_tx_fee_rune") val nativeTxFeeRune: String?
-)
-
-data class LastBlockResponse(
-    val chain: String?,
-    val thorchain: Long?
-)
+data class ConstantsResponse(
+    @SerializedName("int_64_values") val int64Values: Int64Values?
+) {
+    data class Int64Values(
+        @SerializedName("NativeTransactionFee") val nativeTransactionFee: Long?
+    )
+}
 
 data class NodeInfoResponse(
     @SerializedName("default_node_info") val defaultNodeInfo: DefaultNodeInfo?

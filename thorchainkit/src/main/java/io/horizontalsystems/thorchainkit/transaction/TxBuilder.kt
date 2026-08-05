@@ -86,7 +86,9 @@ object TxBuilder {
         chainId: String,
         gasLimit: Long,
         feeAmount: BigInteger? = null,
-        feeDenom: String = "rune",
+        // native settlement denom of the target chain (e.g. "rune" / "cacao"); supplied
+        // by the caller since TxBuilder is chain-agnostic. Only used when feeAmount != null.
+        feeDenom: String,
         signer: Signer
     ): ByteArray {
         val bodyBytes = TxOuterClass.TxBody.newBuilder()

@@ -2,19 +2,19 @@ package io.horizontalsystems.thorchainkit.models
 
 // THORChain bank denom notation. All native assets are bank denoms with 8 decimals:
 // "rune", "tcy", "x/ruji" (THOR-native tokens), "btc-btc" (secured), "btc/btc" (synth)
-object Denom {
+object ThorchainAssetResolver : AssetResolver {
 
-    const val RUNE = "rune"
-    const val DECIMALS = 8
+    override val nativeDenom = "rune"
+    override val decimals = 8
 
     // THOR-native denoms whose notation is irregular (not derivable from the asset)
     private val nativeAssets = mapOf(
-        RUNE to Asset.Rune,
+        nativeDenom to Asset.Rune,
         "tcy" to Asset("THOR", "TCY", "TCY"),
         "x/ruji" to Asset("THOR", "RUJI", "RUJI")
     )
 
-    fun assetFor(denom: String): Asset {
+    override fun assetFor(denom: String): Asset {
         val lowered = denom.lowercase()
 
         nativeAssets[lowered]?.let { return it }
@@ -39,7 +39,7 @@ object Denom {
     // ("tcy") or the "x/" ("x/ruji") notation — only denoms in nativeAssets round-trip
     // exactly. For sends, pass the bank denom string itself; never derive it via
     // denomFor for an unknown x/-token.
-    fun denomFor(asset: Asset): String {
+    override fun denomFor(asset: Asset): String {
         nativeAssets.entries.firstOrNull { it.value == asset }?.let { return it.key }
 
         return if (asset.chain == "THOR" && !asset.synth && !asset.trade && !asset.secured) {
