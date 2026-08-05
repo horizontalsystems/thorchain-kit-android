@@ -1,6 +1,7 @@
 package io.horizontalsystems.thorchainkit.sample
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,11 +17,38 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.BigInteger
 
+private const val DEFAULT_MNEMONIC =
+    "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    var mnemonic by mutableStateOf("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about")
-    var network by mutableStateOf(Network.Mainnet)
-    var watchAddress by mutableStateOf("")
+    // NOTE: a sample app storing a plaintext mnemonic in SharedPreferences is fine for a demo,
+    // but a real wallet must keep the mnemonic in encrypted/keystore-backed storage.
+    private val prefs = application.getSharedPreferences("thorchainkit_sample", Context.MODE_PRIVATE)
+
+    private var mnemonicState by mutableStateOf(prefs.getString(KEY_MNEMONIC, null) ?: DEFAULT_MNEMONIC)
+    var mnemonic: String
+        get() = mnemonicState
+        set(value) {
+            mnemonicState = value
+            prefs.edit().putString(KEY_MNEMONIC, value).apply()
+        }
+
+    private var networkState by mutableStateOf(readNetwork())
+    var network: Network
+        get() = networkState
+        set(value) {
+            networkState = value
+            prefs.edit().putString(KEY_NETWORK, value.name).apply()
+        }
+
+    private var watchAddressState by mutableStateOf(prefs.getString(KEY_WATCH, null) ?: "")
+    var watchAddress: String
+        get() = watchAddressState
+        set(value) {
+            watchAddressState = value
+            prefs.edit().putString(KEY_WATCH, value).apply()
+        }
 
     var kit: ThorchainKit? by mutableStateOf(null)
         private set
@@ -37,18 +65,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var signer: Signer? = null
 
-    fun startFromMnemonic() {
+    init {
+        // resume the last active session across process death
+        when (prefs.getString(KEY_MODE, null)) {
+            MODE_MNEMONIC -> startFromMnemonic(persist = false)
+            MODE_WATCH -> startWatch(persist = false)
+        }
+    }
+
+    fun startFromMnemonic(persist: Boolean = true) {
         runCatching {
             val seed = Mnemonic().toSeed(mnemonic.trim().split(Regex("\\s+")))
             signer = Signer.getInstance(seed, network)
             start(ThorchainKit.getAddress(seed, network))
+            if (persist) persistSession(MODE_MNEMONIC)
         }.onFailure { error = it.message }
     }
 
-    fun startWatch() {
+    fun startWatch(persist: Boolean = true) {
         runCatching {
             signer = null
             start(Address.fromString(watchAddress.trim(), network))
+            if (persist) persistSession(MODE_WATCH)
         }.onFailure { error = it.message }
     }
 
@@ -95,5 +133,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         transactions = emptyList()
         balances = emptyMap()
         sendResult = null
+        prefs.edit().remove(KEY_MODE).apply()
+    }
+
+    private fun persistSession(mode: String) {
+        prefs.edit().putString(KEY_MODE, mode).apply()
+    }
+
+    private fun readNetwork(): Network =
+        prefs.getString(KEY_NETWORK, null)
+            ?.let { name -> runCatching { Network.valueOf(name) }.getOrNull() }
+            ?: Network.Mainnet
+
+    companion object {
+        private const val KEY_NETWORK = "network"
+        private const val KEY_MNEMONIC = "mnemonic"
+        private const val KEY_WATCH = "watch_address"
+        private const val KEY_MODE = "session_mode"
+        private const val MODE_MNEMONIC = "mnemonic"
+        private const val MODE_WATCH = "watch"
     }
 }
