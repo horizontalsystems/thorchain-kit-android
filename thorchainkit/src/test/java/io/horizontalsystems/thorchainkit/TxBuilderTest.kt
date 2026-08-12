@@ -5,7 +5,10 @@ import io.horizontalsystems.thorchainkit.models.Asset
 import io.horizontalsystems.thorchainkit.transaction.Signer
 import io.horizontalsystems.thorchainkit.transaction.TxBuilder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import types.MsgDepositOuterClass.MsgDeposit
 import java.math.BigInteger
 
 class TxBuilderTest {
@@ -54,6 +57,54 @@ class TxBuilderTest {
                     "43beda5d869c5fdc807aa3a4416f0bb7b9dd5d7f8f6d6be897a1ae",
             txRaw.toHexString()
         )
+    }
+
+    // Secured-asset swaps deposit the secured coin via MsgDeposit; the coin's `secured`
+    // flag is what tells the node this is a secured asset rather than a native/synth. Decode
+    // the built message and assert the flag (and asset fields) round-trip. No golden signing
+    // vector needed — this targets serialization, not the signature.
+    @Test
+    fun msgDeposit_securedAsset_setsSecuredFlag() {
+        val memo = "=:ETH.ETH:0x1c7b17362df9a7cc4f4a733792d81ee5b3b40331"
+        val any = TxBuilder.msgDeposit(Asset.fromString("BTC-BTC"), BigInteger.valueOf(1_000_000), memo, from)
+
+        assertEquals(TxBuilder.TYPE_URL_MSG_DEPOSIT, any.typeUrl)
+
+        val message = MsgDeposit.parseFrom(any.value)
+        assertEquals(memo, message.memo)
+        assertEquals(1, message.coinsCount)
+
+        val coin = message.getCoins(0)
+        assertEquals("1000000", coin.amount)
+        // amount is already in 1e8 base units; the coin's own decimals field stays 0 (as for
+        // RUNE). If a secured deposit is ever found to need 8, update this and TxBuilder together.
+        assertEquals(0L, coin.decimals)
+
+        val asset = coin.asset
+        assertEquals("BTC", asset.chain)
+        assertEquals("BTC", asset.symbol)
+        assertEquals("BTC", asset.ticker)
+        assertTrue(asset.secured)
+        assertFalse(asset.synth)
+        assertFalse(asset.trade)
+    }
+
+    // A secured L1 token keeps the contract address in its symbol while the ticker is the bare
+    // token — verify both survive the MsgDeposit serialization.
+    @Test
+    fun msgDeposit_securedTokenAsset_keepsContractSymbol() {
+        val any = TxBuilder.msgDeposit(
+            Asset.fromString("ETH-USDC-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
+            BigInteger.valueOf(1_000_000),
+            "=:THOR.RUNE:thor1g6pnmnyeg48yc3lg796plt0uw50qpp7humfggz",
+            from
+        )
+
+        val asset = MsgDeposit.parseFrom(any.value).getCoins(0).asset
+        assertEquals("ETH", asset.chain)
+        assertEquals("USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48", asset.symbol)
+        assertEquals("USDC", asset.ticker)
+        assertTrue(asset.secured)
     }
 
     @Test
