@@ -68,6 +68,52 @@ class TransactionSyncerTest {
         assertEquals("thor166n4w5039meulfa3p6ydg60ve6ueac7tlt0jws", transaction.outgoing[0].address)
     }
 
+    // real mainnet Midgard action: a BOND that was included in a block but failed
+    // with insufficient funds — Midgard still reports status "success"
+    private val failedActionJson = """
+        {
+          "date": "1790070519718577133",
+          "height": "27937636",
+          "in": [
+            {
+              "address": "thor1z3e8pxs5fpgcdjpnn92y7xfv90enqm46qtxdl2",
+              "coins": [{"amount": "641972000000", "asset": "THOR.RUNE"}],
+              "txID": "A9AFEA02641C049E08CC310E626290EC7B22B83EB796AA36F0B202181C321C8E"
+            }
+          ],
+          "metadata": {
+            "failed": {
+              "code": "5",
+              "memo": "BOND:thor1fj6zv7uvn0t898ch7sxlmjept7lfdnrer8rtpq",
+              "reason": "failed to execute message; message index: 0: insufficient funds"
+            }
+          },
+          "out": [],
+          "pools": [],
+          "status": "success",
+          "type": "failed"
+        }
+    """
+
+    @Test
+    fun fromMidgardAction_failed() {
+        val action = Gson().fromJson(failedActionJson, MidgardAction::class.java)
+        val transaction = TransactionSyncer.fromMidgardAction(action)!!
+
+        assertEquals("failed", transaction.type)
+        assertEquals("failed", transaction.status)
+        assertEquals(true, transaction.isFailed)
+        assertEquals(false, transaction.isPending)
+        assertEquals("BOND:thor1fj6zv7uvn0t898ch7sxlmjept7lfdnrer8rtpq", transaction.memo)
+    }
+
+    @Test
+    fun fromMidgardAction_send_notFailed() {
+        val action = Gson().fromJson(sendActionJson, MidgardAction::class.java)
+
+        assertEquals(false, TransactionSyncer.fromMidgardAction(action)!!.isFailed)
+    }
+
     @Test
     fun fromMidgardAction_noTxId() {
         val action = Gson().fromJson(

@@ -19,7 +19,7 @@ import io.horizontalsystems.thorchainkit.models.TransactionSyncState
         Transaction::class,
         TransactionSyncState::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class)
@@ -46,9 +46,16 @@ abstract class MainDatabase : RoomDatabase() {
             }
         }
 
+        // failed actions were stored with Midgard's indexing status "success"
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE `Transaction` SET status = 'failed' WHERE type = 'failed'")
+            }
+        }
+
         fun getInstance(context: Context, databaseName: String): MainDatabase {
             return Room.databaseBuilder(context, MainDatabase::class.java, databaseName)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 // last resort only: everything stored is a re-syncable cache (no keys)
                 .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()

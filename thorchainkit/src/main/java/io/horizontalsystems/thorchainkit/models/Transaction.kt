@@ -18,7 +18,16 @@ data class Transaction(
 ) {
 
     val isPending: Boolean
-        get() = status == "pending"
+        get() = status == STATUS_PENDING
+
+    val isFailed: Boolean
+        get() = status == STATUS_FAILED
+
+    companion object {
+        const val STATUS_PENDING = "pending"
+        const val STATUS_FAILED = "failed"
+        const val TYPE_FAILED = "failed"
+    }
 }
 
 data class CoinTransfer(

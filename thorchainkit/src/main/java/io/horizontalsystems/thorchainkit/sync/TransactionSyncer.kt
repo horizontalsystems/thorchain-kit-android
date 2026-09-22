@@ -41,6 +41,9 @@ class TransactionSyncer(
                 ?: outgoing.firstOrNull { !it.txId.isNullOrEmpty() }?.txId
                 ?: return null
 
+            val type = action.type
+                ?: throw InvalidProviderResponse("midgard action: missing type")
+
             return Transaction(
                 hash = hash,
                 blockHeight = action.height
@@ -48,15 +51,21 @@ class TransactionSyncer(
                 // Midgard reports date in nanoseconds; consumers expect unix seconds
                 timestamp = (action.date
                     ?: throw InvalidProviderResponse("midgard action: missing date")) / 1_000_000_000,
-                type = action.type
-                    ?: throw InvalidProviderResponse("midgard action: missing type"),
-                status = action.status
-                    ?: throw InvalidProviderResponse("midgard action: missing status"),
+                type = type,
+                status = status(type, action.status
+                    ?: throw InvalidProviderResponse("midgard action: missing status")),
                 memo = extractMemo(action),
                 incoming = coinTransfers(incoming),
                 outgoing = coinTransfers(outgoing)
             )
         }
+
+        // Midgard's status only says whether indexing finished: an action that was
+        // included in a block but failed to execute comes as type "failed" with status
+        // "success". Folding that into status keeps consumers from showing it as a
+        // completed transfer.
+        private fun status(type: String, midgardStatus: String): String =
+            if (type == Transaction.TYPE_FAILED) Transaction.STATUS_FAILED else midgardStatus
 
         private fun coinTransfers(txs: List<ActionTx>): List<CoinTransfer> {
             return txs.flatMap { tx ->
